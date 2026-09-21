@@ -20,6 +20,106 @@ separability at exact coincidence, so the interesting question is what a
 | `kalman` | temporal + morphology tracking | maternal R-peaks |
 | `dl_unet` | **learned (spatial + morphology)** | training data + PyTorch |
 
+## Pipeline flowchart
+
+```
+          Abdominal ECG recording (4 channels)
+          CinC2013 / ADFECGDB / NIFECGDB / synthetic
+                           │
+                           ▼
+        ┌──────────────────────────────────────┐
+        │ 1. LOAD  (fecg/io.py)                 │
+        │    fill NaN gaps by interpolation     │
+        └──────────────────┬───────────────────┘
+                           ▼
+        ┌──────────────────────────────────────┐
+        │ 2. PREPROCESS  (preprocess.py)        │
+        │    band-pass + mains-noise notch      │
+        └──────────────────┬───────────────────┘
+                           ▼
+        ┌──────────────────────────────────────┐
+        │ 3. DETECT MATERNAL QRS                │
+        │    Pan-Tompkins → maternal R-peaks    │
+        └───────┬──────────────────────┬───────┘
+                │                      │
+      Classical methods          Deep learning
+                ▼                      ▼
+   ┌─────────────────────────┐  ┌──────────────────────────┐
+   │ 4a. SUBTRACT MATERNAL   │  │ 4b. 1D U-NET (fecg/dl)    │
+   │  template | adaptive |  │  │  all channels in →        │
+   │  bss_ica  | kalman      │  │  fetal R-peak probability │
+   └───────────┬─────────────┘  └────────────┬─────────────┘
+               ▼                             │
+   ┌─────────────────────────┐               │
+   │ 5. DETECT FETAL QRS     │               │
+   │  in what's left over    │               │
+   │  (+ optional recovery   │               │
+   │   of hidden beats)      │               │
+   └───────────┬─────────────┘               │
+               └──────────────┬──────────────┘
+                              ▼
+        ┌──────────────────────────────────────┐
+        │ 6. FHR / HRV  (fetal.py)              │
+        └──────────────────┬───────────────────┘
+                           ▼
+        ┌──────────────────────────────────────┐
+        │ 7. EVALUATE  (evaluate.py)            │
+        │  match beats to truth within ±50 ms   │
+        │  Se / PPV / F1, reported separately   │
+        │  for coincident and other beats       │
+        │  + FHR error                          │
+        └──────────────────┬───────────────────┘
+                           ▼
+        results/*.json, figures, Streamlit test bench
+```
+
+Only step 4 differs between the classical methods (they all plug into the same
+`Suppressor` interface). Everything else is shared, so differences in the results
+come from the methods themselves.
+
+## Procedure
+
+1. **Clone and install**
+   ```bash
+   git clone https://github.com/sesha003/Fetal-Project.git
+   cd Fetal-Project
+   python -m venv .venv && source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+2. **Quick check without any data** (synthetic — confirms the code runs; the numbers
+   are not findings):
+   ```bash
+   python run_experiment.py
+   python tests/test_smoke.py
+   ```
+3. **Get the datasets** from PhysioNet (not included in the repo) and put them in
+   `data/cinc2013/set-a/`, `data/adfecgdb/` and `data/nifecgdb/`.
+4. **Run the classical methods on real data:**
+   ```bash
+   python run_experiment.py --dataset cinc2013
+   ```
+5. **Run the full comparison.** Trains the U-Net (60 train / 15 test records, about
+   20 minutes) and writes `results/dl_unet.pth` plus `results/comparison_metrics.json`:
+   ```bash
+   python run_full_comparison.py --n-test 15 --epochs 20
+   ```
+6. **Make the figures** (start with `results/fig_signal_anatomy.png`):
+   ```bash
+   python plot_comparison.py
+   python plot_diagnostics.py
+   ```
+7. **Try the recovery method:**
+   ```bash
+   python demo_recovery.py --dropout 1.0
+   python run_recovery_experiment.py --records 8
+   ```
+8. **Explore interactively:**
+   ```bash
+   streamlit run app.py
+   ```
+9. **Read further:** `EXPLANATION.md` for the full reasoning and results, and
+   `RECOVERY.md` for the recovery method.
+
 ## Install
 
 ```bash
