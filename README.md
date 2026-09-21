@@ -97,7 +97,7 @@ come from the methods themselves.
    underlying signal has only two sources, so the arms land close together and ICA
    is under-determined. Method differentiation is expected to appear on real
    multichannel recordings with genuine spatial diversity.
-3. **Get the datasets** from PhysioNet (not included in the repo) and put them in
+3. **Datasets** from PhysioNet are included in the repo under
    `data/cinc2013/set-a/`, `data/adfecgdb/` and `data/nifecgdb/`.
 4. **Run the classical methods on real data:**
    ```bash
