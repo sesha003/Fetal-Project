@@ -84,14 +84,19 @@ come from the methods themselves.
    git clone https://github.com/sesha003/Fetal-Project.git
    cd Fetal-Project
    python -m venv .venv && source .venv/bin/activate
-   pip install -r requirements.txt
+   pip install -r requirements.txt      # torch is optional (only for the DL arm)
    ```
-2. **Quick check without any data** (synthetic — confirms the code runs; the numbers
-   are not findings):
+2. **Quick check without any data:**
    ```bash
-   python run_experiment.py
-   python tests/test_smoke.py
+   python run_experiment.py             # runs all classical arms on a synthetic cohort
+   python tests/test_smoke.py           # sanity checks
    ```
+   The synthetic generator forces a controllable fraction of maternal/fetal
+   coincidences (`overlap_frac`), which is how you study the overlap case directly.
+   **Note:** synthetic numbers are a functional smoke test, not a finding — the
+   underlying signal has only two sources, so the arms land close together and ICA
+   is under-determined. Method differentiation is expected to appear on real
+   multichannel recordings with genuine spatial diversity.
 3. **Get the datasets** from PhysioNet (not included in the repo) and put them in
    `data/cinc2013/set-a/`, `data/adfecgdb/` and `data/nifecgdb/`.
 4. **Run the classical methods on real data:**
@@ -119,26 +124,6 @@ come from the methods themselves.
    ```
 9. **Read further:** `EXPLANATION.md` for the full reasoning and results, and
    `RECOVERY.md` for the recovery method.
-
-## Install
-
-```bash
-pip install -r requirements.txt      # torch is optional (only for the DL arm)
-```
-
-## Quick start (no download needed)
-
-```bash
-python run_experiment.py             # runs all classical arms on a synthetic cohort
-python tests/test_smoke.py           # sanity checks
-```
-
-The synthetic generator forces a controllable fraction of maternal/fetal
-coincidences (`overlap_frac`), which is how you study the overlap case directly.
-**Note:** synthetic numbers are a functional smoke test, not a finding — the
-underlying signal has only two sources, so the arms land close together and ICA is
-under-determined. Method differentiation is expected to appear on real multichannel
-recordings with genuine spatial diversity.
 
 ## Using real data (ADFECGDB)
 
